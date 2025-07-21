@@ -1,103 +1,244 @@
-import Image from "next/image";
+"use client";
+import { useRef, useState, useEffect } from "react";
+import ReactMarkdown from "react-markdown";
+
+const SUGGESTIONS = [
+  "How to get clients for Mentoring?",
+  "How to create a sales funnel?",
+  "Give me ideas for Reels scripts",
+  "Help me create content for Instagram",
+];
+
+const FIRST_BOT_MSG = "Hello! I'm your personal mentor. How can I help you today?";
+
+const AVATAR_URL = "https://ui-avatars.com/api/?name=Mentor&background=040430&color=fff&size=128";
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [messages, setMessages] = useState<any[]>([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [minimized, setMinimized] = useState(true);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [showTyping, setShowTyping] = useState(false);
+  const [showFirstMsg, setShowFirstMsg] = useState(false);
+  const [typedMsg, setTypedMsg] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const bodyRef = useRef<HTMLDivElement>(null);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  useEffect(() => {
+    if (!minimized && messages.length === 0) {
+      setShowTyping(true);
+      setTimeout(() => {
+        setShowTyping(false);
+        setShowFirstMsg(true);
+        let i = 0;
+        const interval = setInterval(() => {
+          setTypedMsg(FIRST_BOT_MSG.slice(0, i + 1));
+          i++;
+          if (i === FIRST_BOT_MSG.length) {
+            clearInterval(interval);
+            setTimeout(() => setShowSuggestions(true), 400);
+          }
+        }, 18);
+      }, 1200);
+    }
+  }, [minimized, messages.length]);
+
+  useEffect(() => {
+    if (showFirstMsg && typedMsg === FIRST_BOT_MSG) {
+      setTimeout(() => {
+        setMessages([{ from: "bot", text: FIRST_BOT_MSG }]);
+        setShowFirstMsg(false);
+      }, 600);
+    }
+  }, [showFirstMsg, typedMsg]);
+
+  useEffect(() => {
+    if (bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight;
+  }, [messages, showSuggestions]);
+
+  const sendMessage = async (msg: string) => {
+    setMessages((msgs: any[]) => [...msgs, { from: "user", text: msg }]);
+    setShowSuggestions(false);
+    setLoading(true);
+    setInput("");
+    setTimeout(() => {
+      if (bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight;
+    }, 100);
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: msg }),
+      });
+      const data = await res.json();
+      setMessages((msgs: any[]) => [
+        ...msgs,
+        { from: "bot", text: data.choices?.[0]?.message?.content || "Sorry, I could not get a response from the AI." },
+      ]);
+    } catch {
+      setMessages((msgs: any[]) => [...msgs, { from: "bot", text: "Error connecting to the AI." }]);
+    }
+    setLoading(false);
+    setTimeout(() => {
+      if (bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight;
+    }, 100);
+  };
+
+  // Ícone SVG de chat
+  const chatIcon = (
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="12" cy="12" r="12" fill="#ee3762" />
+      <path d="M7 10.5C7 9.11929 8.11929 8 9.5 8H14.5C15.8807 8 17 9.11929 17 10.5V13.5C17 14.8807 15.8807 16 14.5 16H10.5L8 17V13.5V10.5Z" stroke="white" strokeWidth="1.5" strokeLinejoin="round"/>
+    </svg>
+  );
+
+  const chatBoxStyle: React.CSSProperties = {
+    position: 'fixed',
+    bottom: 32,
+    right: 32,
+    zIndex: 9999,
+    width: fullscreen ? '98vw' : 440,
+    maxWidth: fullscreen ? '98vw' : 440,
+    height: fullscreen ? '90vh' : 700,
+    maxHeight: fullscreen ? '90vh' : 700,
+    background: "#fff",
+    borderRadius: fullscreen ? 24 : 18,
+    boxShadow: "0 4px 24px rgba(4,4,48,0.18)",
+    display: minimized ? 'none' : 'flex',
+    flexDirection: "column",
+    border: "1px solid #e5e7eb",
+    overflow: "hidden",
+    transition: 'all 0.2s',
+  };
+
+  const chatButtonStyle: React.CSSProperties = {
+    position: 'fixed',
+    bottom: 32,
+    right: 32,
+    zIndex: 9999,
+    width: 64,
+    height: 64,
+    borderRadius: '50%',
+    background: '#ee3762',
+    boxShadow: '0 2px 8px #ee376299',
+    border: 'none',
+    display: minimized ? 'flex' : 'none',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    transition: 'background 0.2s',
+  };
+
+  return (
+    <>
+      {/* Botão flutuante minimizado */}
+      <button style={chatButtonStyle} onClick={() => setMinimized(false)} aria-label="Open chat">
+        {chatIcon}
+      </button>
+      {/* Chatbox */}
+      <div style={chatBoxStyle}>
+        {/* Header com avatar e título menor */}
+        <div style={{ background: "#040430", display: 'flex', alignItems: 'center', gap: 14, padding: fullscreen ? '18px 28px' : '12px 22px', borderTopLeftRadius: fullscreen ? 24 : 18, borderTopRightRadius: fullscreen ? 24 : 18, borderBottom: '1px solid #23234a' }}>
+          <img src={AVATAR_URL} alt="Mentor avatar" style={{ width: fullscreen ? 48 : 38, height: fullscreen ? 48 : 38, borderRadius: '50%', objectFit: 'cover', background: '#fff', border: '2px solid #fff', boxShadow: '0 1px 4px #23234a22' }} />
+          <span style={{ color: '#fff', fontWeight: 600, fontSize: fullscreen ? 18 : 15, letterSpacing: 0.2, opacity: 0.92, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Mentor Maker Agent</span>
+          {/* Botão minimizar */}
+          <button onClick={() => setMinimized(true)} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#fff', fontSize: 26, cursor: 'pointer', fontWeight: 700, lineHeight: 1 }} aria-label="Minimize">–</button>
+          {/* Botão expandir/retrair */}
+          <button onClick={() => setFullscreen(f => !f)} style={{ marginLeft: 8, background: 'none', border: 'none', color: '#fff', fontSize: 22, cursor: 'pointer', fontWeight: 700, lineHeight: 1 }} aria-label={fullscreen ? "Restore" : "Expand"}>{fullscreen ? '🗗' : '🗖'}</button>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+        <div ref={bodyRef} style={{ flex: 1, padding: fullscreen ? 28 : 20, overflowY: "auto", background: "#9dc4fa36", display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {/* Efeito de digitando e primeira mensagem */}
+          {showTyping && (
+            <div style={{ alignSelf: "flex-start", color: "#040430", fontSize: fullscreen ? 18 : 16, fontWeight: 500, marginBottom: 2 }}>
+              <span style={{ background: "#fff", borderRadius: 14, padding: fullscreen ? '14px 20px' : '12px 16px', boxShadow: "0 2px 8px #04043011", display: 'inline-block' }}>
+                <span style={{ marginRight: 8 }}>Mentor is typing</span>
+                <span className="blinking-cursor">...</span>
+              </span>
+            </div>
+          )}
+          {showFirstMsg && (
+            <div style={{ alignSelf: "flex-start", background: "#fff", color: "#040430", borderRadius: 14, padding: fullscreen ? '14px 20px' : '12px 16px', fontSize: fullscreen ? 18 : 16, fontWeight: 500, marginBottom: 2, boxShadow: "0 2px 8px #04043011", minHeight: 32 }}>
+              {typedMsg}
+            </div>
+          )}
+          {messages.map((m, i) => (
+            <div key={i} style={{
+              alignSelf: m.from === "user" ? "flex-end" : "flex-start",
+              maxWidth: '85%',
+              background: m.from === "user" ? "#ee3762" : "#fff",
+              color: m.from === "user" ? "#fff" : "#040430",
+              borderRadius: 14,
+              borderBottomRightRadius: m.from === "user" ? 4 : 14,
+              borderBottomLeftRadius: m.from === "user" ? 14 : 4,
+              padding: fullscreen ? '14px 20px' : '12px 16px',
+              marginBottom: 2,
+              fontSize: fullscreen ? 18 : 16,
+              boxShadow: m.from === "user" ? "0 2px 8px #ee376233" : "0 2px 8px #04043011",
+              wordBreak: 'break-word',
+              whiteSpace: 'pre-line',
+            }}>
+              {m.from === "bot" ? <ReactMarkdown
+                components={{
+                  h1: ({node, ...props}) => <h1 style={{fontSize:fullscreen?24:20, fontWeight:700, margin:'10px 0 4px 0', color:'#040430'}} {...props} />,
+                  h2: ({node, ...props}) => <h2 style={{fontSize:fullscreen?22:18, fontWeight:600, margin:'8px 0 4px 0', color:'#040430'}} {...props} />,
+                  ul: ({node, ...props}) => <ul style={{margin:'6px 0 6px 18px', padding:0, color:'#040430'}} {...props} />,
+                  li: ({node, ...props}) => <li style={{marginBottom:2, color:'#040430'}} {...props} />,
+                  a: ({node, ...props}) => <a style={{color:'#ee3762', textDecoration:'underline'}} target="_blank" rel="noopener noreferrer" {...props} />,
+                  strong: ({node, ...props}) => <strong style={{color:'#040430'}} {...props} />,
+                  code: ({node, ...props}) => <code style={{background:'#f4f4f4', borderRadius:4, padding:'2px 4px', fontSize:fullscreen?16:14}} {...props} />,
+                  p: ({node, ...props}) => <p style={{margin:'6px 0', color:'#040430'}} {...props} />,
+                }}
+              >{m.text}</ReactMarkdown> : m.text}
+            </div>
+          ))}
+          {/* Botão See options e sugestões de perguntas */}
+          {showSuggestions && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, margin: '10px 0 0 0', alignSelf: 'flex-start' }}>
+              {SUGGESTIONS.map((s) => (
+                <button
+                  key={s}
+                  style={{
+                    background: "#ee3762",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 12,
+                    padding: "8px 16px",
+                    cursor: "pointer",
+                    fontSize: 15,
+                    fontWeight: 500,
+                    transition: 'background 0.2s'
+                  }}
+                  onMouseOver={e => (e.currentTarget.style.background='#c72c50')}
+                  onMouseOut={e => (e.currentTarget.style.background='#ee3762')}
+                  onClick={() => sendMessage(s)}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
+          {loading && <div style={{ color: "#040430", fontWeight: 500 }}>Thinking...</div>}
+        </div>
+        <div style={{ padding: fullscreen ? "22px 28px 14px 28px" : "18px 20px 10px 20px", background: "#fff", borderTop: '1px solid #e5e7eb', display: "flex", gap: 10, alignItems: "center" }}>
+          <input
+            style={{ flex: 1, padding: fullscreen ? "14px 20px" : "12px 16px", borderRadius: 12, border: "1px solid #9dc4fa", fontSize: fullscreen ? 18 : 16, outline: 'none', background: '#f9fafb', color: '#040430', fontWeight: 500, transition: 'border 0.2s' }}
+            placeholder="Type your question..."
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter" && input.trim()) sendMessage(input.trim()); }}
+            disabled={loading || showTyping || showFirstMsg}
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+          <button
+            style={{ background: "#ee3762", color: "#fff", border: "none", borderRadius: 12, padding: fullscreen ? "14px 32px" : "12px 28px", cursor: "pointer", fontSize: fullscreen ? 18 : 16, fontWeight: 600, transition: 'background 0.2s' }}
+            onMouseOver={e => (e.currentTarget.style.background='#c72c50')} onMouseOut={e => (e.currentTarget.style.background='#ee3762')}
+            onClick={() => input.trim() && sendMessage(input.trim())}
+            disabled={loading || showTyping || showFirstMsg}
+          >
+            Send
+          </button>
+        </div>
+      </div>
+    </>
   );
 }
