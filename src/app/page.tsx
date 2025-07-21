@@ -1,6 +1,7 @@
 "use client";
 import { useRef, useState, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
+import Image from "next/image";
 
 const SUGGESTIONS = [
   "How to get clients for Mentoring?",
@@ -11,10 +12,13 @@ const SUGGESTIONS = [
 
 const FIRST_BOT_MSG = "Hello! I'm your personal mentor. How can I help you today?";
 
-const AVATAR_URL = "https://ui-avatars.com/api/?name=Mentor&background=040430&color=fff&size=128";
+// Avatar padrão (pode trocar por outra URL depois)
+const AVATAR_URL = "https://mentoracademy.co/wp-content/uploads/2025/07/Mentor-Academy_VBI-1.png";
+
+type Message = { from: "user" | "bot"; text: string };
 
 export default function Home() {
-  const [messages, setMessages] = useState<any[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [minimized, setMinimized] = useState(true);
@@ -25,6 +29,7 @@ export default function Home() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const bodyRef = useRef<HTMLDivElement>(null);
 
+  // Efeito de digitação na primeira mensagem
   useEffect(() => {
     if (!minimized && messages.length === 0) {
       setShowTyping(true);
@@ -44,6 +49,7 @@ export default function Home() {
     }
   }, [minimized, messages.length]);
 
+  // Adiciona a primeira mensagem "real" ao histórico após digitação
   useEffect(() => {
     if (showFirstMsg && typedMsg === FIRST_BOT_MSG) {
       setTimeout(() => {
@@ -58,7 +64,7 @@ export default function Home() {
   }, [messages, showSuggestions]);
 
   const sendMessage = async (msg: string) => {
-    setMessages((msgs: any[]) => [...msgs, { from: "user", text: msg }]);
+    setMessages((msgs) => [...msgs, { from: "user", text: msg }]);
     setShowSuggestions(false);
     setLoading(true);
     setInput("");
@@ -72,12 +78,12 @@ export default function Home() {
         body: JSON.stringify({ message: msg }),
       });
       const data = await res.json();
-      setMessages((msgs: any[]) => [
+      setMessages((msgs) => [
         ...msgs,
         { from: "bot", text: data.choices?.[0]?.message?.content || "Sorry, I could not get a response from the AI." },
       ]);
     } catch {
-      setMessages((msgs: any[]) => [...msgs, { from: "bot", text: "Error connecting to the AI." }]);
+      setMessages((msgs) => [...msgs, { from: "bot", text: "Error connecting to the AI." }]);
     }
     setLoading(false);
     setTimeout(() => {
@@ -93,6 +99,7 @@ export default function Home() {
     </svg>
   );
 
+  // Estilos dinâmicos
   const chatBoxStyle: React.CSSProperties = {
     position: 'fixed',
     bottom: 32,
@@ -138,9 +145,9 @@ export default function Home() {
       </button>
       {/* Chatbox */}
       <div style={chatBoxStyle}>
-        {/* Header com avatar e título menor */}
+        {/* Header com logo e título menor */}
         <div style={{ background: "#040430", display: 'flex', alignItems: 'center', gap: 14, padding: fullscreen ? '18px 28px' : '12px 22px', borderTopLeftRadius: fullscreen ? 24 : 18, borderTopRightRadius: fullscreen ? 24 : 18, borderBottom: '1px solid #23234a' }}>
-          <img src={AVATAR_URL} alt="Mentor avatar" style={{ width: fullscreen ? 48 : 38, height: fullscreen ? 48 : 38, borderRadius: '50%', objectFit: 'cover', background: '#fff', border: '2px solid #fff', boxShadow: '0 1px 4px #23234a22' }} />
+          <Image src={AVATAR_URL} alt="Mentor logo" width={fullscreen ? 48 : 38} height={fullscreen ? 48 : 38} style={{ objectFit: 'contain', background: 'transparent' }} />
           <span style={{ color: '#fff', fontWeight: 600, fontSize: fullscreen ? 18 : 15, letterSpacing: 0.2, opacity: 0.92, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Mentor Maker Agent</span>
           {/* Botão minimizar */}
           <button onClick={() => setMinimized(true)} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#fff', fontSize: 26, cursor: 'pointer', fontWeight: 700, lineHeight: 1 }} aria-label="Minimize">–</button>
@@ -180,19 +187,19 @@ export default function Home() {
             }}>
               {m.from === "bot" ? <ReactMarkdown
                 components={{
-                  h1: ({node, ...props}) => <h1 style={{fontSize:fullscreen?24:20, fontWeight:700, margin:'10px 0 4px 0', color:'#040430'}} {...props} />,
-                  h2: ({node, ...props}) => <h2 style={{fontSize:fullscreen?22:18, fontWeight:600, margin:'8px 0 4px 0', color:'#040430'}} {...props} />,
-                  ul: ({node, ...props}) => <ul style={{margin:'6px 0 6px 18px', padding:0, color:'#040430'}} {...props} />,
-                  li: ({node, ...props}) => <li style={{marginBottom:2, color:'#040430'}} {...props} />,
-                  a: ({node, ...props}) => <a style={{color:'#ee3762', textDecoration:'underline'}} target="_blank" rel="noopener noreferrer" {...props} />,
-                  strong: ({node, ...props}) => <strong style={{color:'#040430'}} {...props} />,
-                  code: ({node, ...props}) => <code style={{background:'#f4f4f4', borderRadius:4, padding:'2px 4px', fontSize:fullscreen?16:14}} {...props} />,
-                  p: ({node, ...props}) => <p style={{margin:'6px 0', color:'#040430'}} {...props} />,
+                  h1: (props) => <h1 style={{fontSize:fullscreen?24:20, fontWeight:700, margin:'10px 0 4px 0', color:'#040430'}} {...props} />,
+                  h2: (props) => <h2 style={{fontSize:fullscreen?22:18, fontWeight:600, margin:'8px 0 4px 0', color:'#040430'}} {...props} />,
+                  ul: (props) => <ul style={{margin:'6px 0 6px 18px', padding:0, color:'#040430'}} {...props} />,
+                  li: (props) => <li style={{marginBottom:2, color:'#040430'}} {...props} />,
+                  a: (props) => <a style={{color:'#ee3762', textDecoration:'underline'}} target="_blank" rel="noopener noreferrer" {...props} />,
+                  strong: (props) => <strong style={{color:'#040430'}} {...props} />,
+                  code: (props) => <code style={{background:'#f4f4f4', borderRadius:4, padding:'2px 4px', fontSize:fullscreen?16:14}} {...props} />,
+                  p: (props) => <p style={{margin:'6px 0', color:'#040430'}} {...props} />,
                 }}
               >{m.text}</ReactMarkdown> : m.text}
             </div>
           ))}
-          {/* Botão See options e sugestões de perguntas */}
+          {/* Sugestões de perguntas após a primeira mensagem */}
           {showSuggestions && (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, margin: '10px 0 0 0', alignSelf: 'flex-start' }}>
               {SUGGESTIONS.map((s) => (
