@@ -132,11 +132,10 @@
 
   // Shortcuts
   const shortcuts = [
-    'Quero criar um funil de vendas',
-    'Me ajude a criar conteúdo para Instagram',
-    'Como estruturar um curso online?',
-    'Me dê ideias de scripts para Reels',
-    'Como captar clientes para coaching?',
+    'How to get clients for Mentoring?',
+    'How to create a sales funnel?',
+    'Give me ideas for Reels scripts',
+    'Help me create content for Instagram',
   ];
   const shortcutsDiv = document.createElement('div');
   shortcutsDiv.className = 'kimi-chat-shortcuts';
