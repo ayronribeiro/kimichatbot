@@ -9,17 +9,9 @@ export default defineConfig({
       entry: path.resolve(__dirname, "widget-entry.tsx"),
       name: "MentorChatWidget",
       fileName: () => `widget.js`,
-      formats: ["umd"],
+      formats: ["iife"], // Gera bundle standalone
     },
-    rollupOptions: {
-      external: ["react", "react-dom"],
-      output: {
-        globals: {
-          react: "React",
-          "react-dom": "ReactDOM",
-        },
-      },
-    },
+    // Não externaliza React nem ReactDOM
     outDir: "public",
     emptyOutDir: false,
     minify: true,
